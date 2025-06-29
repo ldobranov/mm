@@ -1,0 +1,111 @@
+{
+  "en": {
+    "menu": {
+      "home": "Home",
+      "items": "Items",
+      "categories": "Categories",
+      "users": "Users",
+      "login": "Login",
+      "register": "Register",
+      "profile": "Profile",
+      "logout": "Logout"
+    },
+    "profile": {
+      "userProfile": "User Profile",
+      "username": "Username:",
+      "email": "Email:",
+      "oldPassword": "Old Password:",
+      "newPassword": "New Password:",
+      "confirmNewPassword": "Confirm New Password:",
+      "role": "Role:",
+      "saveChanges": "Save Changes",
+      "success": "Profile updated successfully!",
+      "errorPassword": "New passwords do not match.",
+      "errorOldPassword": "Old password is incorrect.",
+      "notAuthenticated": "Not authenticated or session expired."
+    },
+    "items": {
+      "title": "Items",
+      "name": "Name",
+      "price": "Price",
+      "description": "Description",
+      "addItem": "Add Item",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "categories": {
+      "title": "Categories",
+      "newCategoryName": "New category name",
+      "create": "Create",
+      "noParent": "No Parent",
+      "selectable": "Selectable",
+      "parent": "parent",
+      "notSelectable": "Not selectable",
+      "created": "Category created successfully!",
+      "updated": "Category updated successfully!",
+      "deleted": "Category deleted successfully!",
+      "reordered": "Categories reordered successfully!",
+      "unauthorized": "You are not authorized to perform this action."
+    },
+    "common": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel"
+    }
+  },
+  "bg": {
+    "menu": {
+      "home": "Начало",
+      "items": "Артикули",
+      "categories": "Категории",
+      "users": "Потребители",
+      "login": "Вход",
+      "register": "Регистрация",
+      "profile": "Профил",
+      "logout": "Изход"
+    },
+    "profile": {
+      "userProfile": "Потребителски профил",
+      "username": "Потребителско име:",
+      "email": "Имейл:",
+      "oldPassword": "Стара парола:",
+      "newPassword": "Нова парола:",
+      "confirmNewPassword": "Потвърди нова парола:",
+      "role": "Роля:",
+      "saveChanges": "Запази промените",
+      "success": "Профилът е обновен успешно!",
+      "errorPassword": "Новите пароли не съвпадат.",
+      "errorOldPassword": "Старата парола е грешна.",
+      "notAuthenticated": "Не сте автентикирани или сесията е изтекла."
+    },
+    "items": {
+      "title": "Артикули",
+      "name": "Име",
+      "price": "Цена",
+      "description": "Описание",
+      "addItem": "Добави артикул",
+      "edit": "Редактирай",
+      "delete": "Изтрий",
+      "save": "Запази",
+      "cancel": "Отказ"
+    },
+    "categories": {
+      "title": "Категории",
+      "newCategoryName": "Ново име на категория",
+      "create": "Създай",
+      "noParent": "Без родител",
+      "selectable": "Може да се избира",
+      "parent": "родител",
+      "notSelectable": "Не може да се избира"
+    },
+    "common": {
+      "edit": "Редактирай",
+      "delete": "Изтрий",
+      "save": "Запази",
+      "cancel": "Отказ"
+    }
+  }
+}

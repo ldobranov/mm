@@ -1,0 +1,8 @@
+# Node/Vue
+node_modules/
+dist/
+.vite/
+.DS_Store
+.env
+.vscode/
+.idea/
