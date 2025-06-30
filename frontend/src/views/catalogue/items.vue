@@ -68,6 +68,7 @@
 
 <script>
 import axios from 'axios'
+import { API_BASE_URL } from '../../config'
 
 export default {
   name: 'ItemList',
@@ -91,7 +92,7 @@ export default {
   },
   methods: {
     fetchItems() {
-      axios.get('http://192.168.1.77:8000/api/v1/items/')
+      axios.get(`${API_BASE_URL}/api/v1/items/`)
         .then(response => {
           this.items = response.data
         })
@@ -100,7 +101,7 @@ export default {
         })
     },
     fetchCategories() {
-      axios.get('http://192.168.1.77:8000/api/v1/categories/')
+      axios.get(`${API_BASE_URL}/api/v1/categories/`)
         .then(response => {
           this.categories = response.data
         })
@@ -109,7 +110,7 @@ export default {
         })
     },
     addItem() {
-      axios.post('http://192.168.1.77:8000/api/v1/items/', this.newItem)
+      axios.post(`${API_BASE_URL}/api/v1/items/`, this.newItem)
         .then(() => {
           this.newItem = { name: '', price: '', description: '', category_ids: [] }
           this.fetchItems()
@@ -119,7 +120,7 @@ export default {
         })
     },
     deleteItem(id) {
-      axios.delete(`http://192.168.1.77:8000/api/v1/items/${id}`)
+      axios.delete(`${API_BASE_URL}/api/v1/items/${id}`)
         .then(() => {
            this.fetchItems()
         })
@@ -136,7 +137,7 @@ export default {
         this.editItem = { name: '', price: '', description: '', category_ids: [] }
       },
       updateItem(id) {
-        axios.put(`http://192.168.1.77:8000/api/v1/items/${id}`, this.editItem)
+        axios.put(`${API_BASE_URL}/api/v1/items/${id}`, this.editItem)
           .then(() => {
             this.cancelEdit()
             this.fetchItems()

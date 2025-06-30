@@ -51,6 +51,7 @@
 
 <script>
 import axios from 'axios'
+import { API_BASE_URL } from '../config'
 
 export default {
   data() {
@@ -62,7 +63,7 @@ export default {
     }
   },
   mounted() {
-    axios.get('http://192.168.1.77:8000/api/v1/users/me', {
+    axios.get(`${API_BASE_URL}/api/v1/users/me`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     })
     .then(res => {
@@ -87,7 +88,7 @@ export default {
       if (this.editUser.email !== this.user.email) payload.email = this.editUser.email;
       if (this.editUser.password) payload.password = this.editUser.password;
       if (this.editUser.old_password) payload.old_password = this.editUser.old_password;
-      axios.put('http://192.168.1.77:8000/api/v1/users/me', payload, {
+      axios.put(`${API_BASE_URL}/api/v1/users/me`, payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       })
       .then(res => {

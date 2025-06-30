@@ -7,6 +7,7 @@
 
 <script>
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 export default {
   name: 'Home',
   data() {
@@ -32,7 +33,7 @@ export default {
   methods: {
     async loadSettings() {
       try {
-        const response = await axios.get('/api/v1/settings', {
+        const response = await axios.get(`${API_BASE_URL}/api/v1/settings`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         this.languages = response.data.languages;

@@ -50,7 +50,9 @@ def get_widget(widget_id: int):
 def update_widget(widget_id: int, widget: WidgetUpdate):
     for i, w in enumerate(widgets_db):
         if w["id"] == widget_id:
-            widgets_db[i].update(widget.dict())
+            # Only update fields present in the request (partial update)
+            update_data = widget.dict(exclude_unset=True)
+            widgets_db[i].update(update_data)
             return widgets_db[i]
     raise HTTPException(status_code=404, detail="Widget not found")
 

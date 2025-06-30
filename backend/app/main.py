@@ -37,7 +37,10 @@ def read_root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    host = os.environ.get("BACKEND_HOST", "0.0.0.0")
+    port = int(os.environ.get("BACKEND_PORT", "8887"))
+    uvicorn.run(app, host=host, port=port)
 
 import asyncio
 @app.on_event("startup")

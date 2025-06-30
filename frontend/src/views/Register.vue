@@ -25,6 +25,7 @@
 
 <script>
 import axios from 'axios'
+import { API_BASE_URL } from '../config'
 
 export default {
   data() {
@@ -37,8 +38,9 @@ export default {
   },
   methods: {
     async register() {
+      console.log('Register button clicked'); // Debug: check if method is called
       try {
-        await axios.post('http://192.168.1.77:8000/api/v1/users/register', {
+        await axios.post(`${API_BASE_URL}/api/v1/users/register`, {
           username: this.username,
           email: this.email,
           password: this.password

@@ -3,12 +3,16 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import httpx
 import logging
+import requests
+from typing import Optional
 
 router = APIRouter(prefix="/api/v1/hiveos", tags=["HiveOS"])
 
-class HiveOSRigRequest(BaseModel):
+class HiveOSFarmRequest(BaseModel):
     token: str
     farm_id: str
+
+class HiveOSRigRequest(HiveOSFarmRequest):
     worker_id: str
 
 class HiveOSActionRequest(HiveOSRigRequest):
@@ -21,15 +25,33 @@ ALLOWED_ACTIONS = [
     'shutdown',
 ]
 
+@router.post("/farm")
+def get_farm(data: HiveOSFarmRequest):
+    token = data.token
+    farm_id = data.farm_id
+    url = f"https://api2.hiveos.farm/api/v2/farms/{farm_id}/workers"
+    headers = {"Authorization": f"Bearer {token}"}
+    try:
+        resp = requests.get(url, headers=headers, timeout=15)
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="HiveOS API request timed out")
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"HiveOS API error: {str(e)}")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail=resp.text)
+    return {"rigs": resp.json()["data"]}
+
 @router.post("/rig")
-async def get_rig(data: HiveOSRigRequest):
-    url = f"{HIVEOS_API_BASE}/farms/{data.farm_id}/workers/{data.worker_id}"
-    headers = {"Authorization": f"Bearer {data.token}"}
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url, headers=headers)
-        if resp.status_code != 200:
-            raise HTTPException(status_code=resp.status_code, detail=resp.text)
-        return resp.json()
+def get_rig(data: HiveOSRigRequest):
+    token = data.token
+    farm_id = data.farm_id
+    worker_id = data.worker_id
+    url = f"https://api2.hiveos.farm/api/v2/farms/{farm_id}/workers/{worker_id}"
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = requests.get(url, headers=headers)
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail=resp.text)
+    return resp.json()
 
 @router.post("/rig/action")
 async def rig_action(data: HiveOSActionRequest):

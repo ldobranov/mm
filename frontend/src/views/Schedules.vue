@@ -62,6 +62,7 @@
 
 <script>
 import axios from 'axios'
+import { API_BASE_URL } from '../config'
 export default {
   name: 'Schedules',
   data() {
@@ -99,12 +100,12 @@ export default {
   },
   methods: {
     async fetchSchedules() {
-      const res = await axios.get('/api/v1/schedules/')
+      const res = await axios.get(`${API_BASE_URL}/api/v1/schedules/`)
       this.schedules = res.data
     },
     async fetchWidgets() {
       try {
-        const res = await axios.get('/api/v1/widgets/')
+        const res = await axios.get(`${API_BASE_URL}/api/v1/widgets/`)
         console.log('Widgets API response:', res.data)
         const widgets = res.data.map((widget, idx) => ({
           id: widget.id !== undefined ? widget.id : idx,
@@ -118,7 +119,7 @@ export default {
     },
     async addSchedule() {
       try {
-        await axios.post('/api/v1/schedules/', this.form)
+        await axios.post(`${API_BASE_URL}/api/v1/schedules/`, this.form)
         this.showAdd = false
         this.form = { widget_id: '', action: 'miners/start', time: '', repeat: 'once' }
         await this.fetchSchedules()
@@ -129,7 +130,7 @@ export default {
     async deleteSchedule(id) {
       if (!confirm('Delete this schedule?')) return
       try {
-        await axios.delete(`/api/v1/schedules/${id}`)
+        await axios.delete(`${API_BASE_URL}/api/v1/schedules/${id}`)
         await this.fetchSchedules()
       } catch (e) {
         alert('Failed to delete schedule: ' + (e?.message || e))

@@ -19,7 +19,11 @@
           @mousedown.right.prevent="startResize($event, widget)"
         >
           <div class="widget-handle">☰</div>
-          <component :is="getWidgetComponent(widget)" :widget="widget" />
+          <component
+            :is="getWidgetComponent(widget)"
+            :widget="widget"
+            v-bind="widget.type === 'hive' ? { mode: widget.config?.mode || 'rig' } : {}"
+          />
           <div class="resize-corner" @mousedown.stop.prevent="startResize($event, widget)"></div>
         </div>
       </template>
@@ -30,6 +34,8 @@
 <script>
 import draggable from 'vuedraggable'
 import axios from 'axios'
+import { API_BASE_URL } from '../config'
+import { defineAsyncComponent } from 'vue'
 
 // Dummy widget components for now
 const ClockWidget = {
@@ -109,14 +115,11 @@ const ClockWidget = {
     <div style="text-align:center;">
       <b>🕒</b><br />
       <div v-if="widget.config && widget.config.style === 'circle'" :style="getClockStyle()">
-        <!-- Hour marks -->
         <div v-for="n in 12" :key="'h'+n" :style="getTickStyle(n*30, true)"></div>
-        <div v-for="n in 60" :key="'m'+n" v-if="n%5!==0" :style="getTickStyle(n*6, false)"></div>
-        <!-- Hands -->
+        <div v-for="m in 60" :key="'m'+m" v-if="m%5!==0" :style="getTickStyle(m*6, false)"></div>
         <div :style="getHandStyle(40, 5, ((hour)*30 + minute*0.5), '#222', 2)"></div>
         <div :style="getHandStyle(54, 3, (minute*6 + second*0.1), '#444', 3)"></div>
         <div :style="getHandStyle(58, 2, (second*6), 'red', 4)"></div>
-        <!-- Center -->
         <div style="position:absolute;left:50%;top:50%;width:14px;height:14px;background:#333;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);z-index:10"></div>
       </div>
       <div v-else style="font-size:2em;">
@@ -163,109 +166,11 @@ const TempWidget = {
   props: ['widget'],
   template: `<div><b>Temp</b></div>`
 }
-const HiveWidget = {
-  props: ['widget'],
-  data() {
-    return {
-      loading: false,
-      error: '',
-      rig: null,
-      token: '',
-      farmId: '',
-      workerId: '',
-    }
-  },
-  async mounted() {
-    if (this.widget.config) {
-      this.token = this.widget.config.token || '';
-      this.farmId = this.widget.config.farmId || '';
-      this.workerId = this.widget.config.workerId || '';
-    }
-    if (this.token && this.farmId && this.workerId) {
-      await this.fetchRig();
-    }
-  },
-  methods: {
-    async fetchRig() {
-      this.loading = true;
-      this.error = '';
-      try {
-        // Use backend proxy endpoint
-        const res = await axios.post('/api/v1/hiveos/rig', {
-          token: this.token,
-          farm_id: this.farmId,
-          worker_id: this.workerId
-        });
-        this.rig = res.data;
-      } catch (e) {
-        this.error = e.response?.data?.detail || e.message || 'Error fetching rig';
-      } finally {
-        this.loading = false;
-      }
-    },
-    async sendAction(action) {
-      this.loading = true;
-      this.error = '';
-      try {
-        // Use backend proxy endpoint for actions
-        await axios.post('/api/v1/hiveos/rig/action', {
-          token: this.token,
-          farm_id: this.farmId,
-          worker_id: this.workerId,
-          action: action
-        });
-        await this.fetchRig();
-      } catch (e) {
-        this.error = e.response?.data?.detail || e.message || 'Error sending action';
-      } finally {
-        this.loading = false;
-      }
-    },
-    saveConfig() {
-      this.widget.config.token = this.token;
-      this.widget.config.farmId = this.farmId;
-      this.widget.config.workerId = this.workerId;
-    },
-    formatUptime(bootTime) {
-      // bootTime is a unix timestamp, current time is now
-      const now = Math.floor(Date.now() / 1000);
-      const diff = now - bootTime;
-      const h = Math.floor(diff / 3600);
-      const m = Math.floor((diff % 3600) / 60);
-      return h + 'h ' + m + 'm';
-    }
-  },
-  template: `
-    <div style="min-width:220px;max-width:350px;margin:auto;">
-      <b>⛏️ HiveOS Rig</b>
-      <div v-if="!token || !farmId || !workerId" style="margin-top:10px;">
-        <div class="mb-2"><input v-model="token" placeholder="API Token" class="form-control form-control-sm" /></div>
-        <div class="mb-2"><input v-model="farmId" placeholder="Farm ID" class="form-control form-control-sm" /></div>
-        <div class="mb-2"><input v-model="workerId" placeholder="Worker ID" class="form-control form-control-sm" /></div>
-        <button class="btn btn-sm btn-primary" @click="saveConfig(); fetchRig()">Connect</button>
-      </div>
-      <div v-else>
-        <button class="btn btn-sm btn-secondary me-1" @click="fetchRig">Refresh</button>
-        <button class="btn btn-sm btn-success me-1" @click="sendAction('miners/start')">Start Miner</button>
-        <button class="btn btn-sm btn-warning me-1" @click="sendAction('miners/stop')">Stop Miner</button>
-        <button class="btn btn-sm btn-danger" @click="sendAction('shutdown')">Shutdown</button>
-        <div v-if="loading" class="mt-2">Loading...</div>
-        <div v-if="error" class="text-danger mt-2">{{ error }}</div>
-        <div v-if="rig" class="mt-2" style="font-size:0.95em;">
-          <div><b>Name:</b> {{ rig.name }}</div>
-          <div><b>Status:</b> {{ rig.stats?.online ? 'Online' : 'Offline' }}</div>
-          <div><b>Uptime:</b> {{ rig.stats && rig.stats.boot_time ? formatUptime(rig.stats.boot_time) : '-' }}</div>
-          <div><b>Temp:</b> <span v-if="rig.gpu_stats && rig.gpu_stats.length">{{ rig.gpu_stats[0].temp }}°C</span></div>
-          <div><b>Hashrate:</b> <span v-if="rig.miners_summary && rig.miners_summary.hashrates && rig.miners_summary.hashrates.length">{{ (rig.miners_summary.hashrates[0].hash/1000).toFixed(2) }} MH/s</span></div>
-        </div>
-      </div>
-    </div>
-  `
-}
+const HiveWidget = defineAsyncComponent(() => import('../widgets/HiveWidget.vue'))
 
 export default {
   name: 'Display',
-  components: { draggable },
+  components: { draggable, HiveWidget },
   data() {
     return {
       widgets: [],
@@ -290,7 +195,7 @@ export default {
   },
   methods: {
     async fetchWidgets() {
-      const res = await axios.get('/api/v1/widgets/')
+      const res = await axios.get(`${API_BASE_URL}/api/v1/widgets/`)
       let widgets = res.data.filter(w => w.enabled)
       this.widgets = widgets
       // Load background color from the first widget (optional)
@@ -301,7 +206,7 @@ export default {
     async saveLayout() {
       // Save size, pos, and background for each widget to the backend
       for (const w of this.widgets) {
-        await axios.put(`/api/v1/widgets/${w.id}`, {
+        await axios.put(`${API_BASE_URL}/api/v1/widgets/${w.id}`, {
           ...w,
           size: w.size,
           pos: w.pos,
@@ -313,7 +218,7 @@ export default {
       if (widget.type === 'clock') return ClockWidget
       if (widget.type === 'date') return DateWidget
       if (widget.type === 'temp') return TempWidget
-      if (widget.type === 'hive') return HiveWidget
+      if (widget.type === 'hive') return HiveWidget // <-- ensure this is the imported HiveWidget
       return {
         template: '<div>Unknown widget</div>'
       }

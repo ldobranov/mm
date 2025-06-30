@@ -46,6 +46,7 @@
 
 <script>
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 export default {
   name: 'Menu',
   props: {
@@ -57,6 +58,7 @@ export default {
     return {
       loggedIn: !!localStorage.getItem('token'),
       dynamicMenu: [],
+      fallbackMenu: []
     };
   },
   computed: {
@@ -74,8 +76,9 @@ export default {
       }
     },
     menuToRender() {
-      // Use prop if passed, else fallback to dynamicMenu
-      return this.menu || this.dynamicMenu;
+      if (this.dynamicMenu && this.dynamicMenu.length) return this.dynamicMenu;
+      if (this.menu && this.menu.length) return this.menu;
+      return this.fallbackMenu;
     }
   },
   methods: {
@@ -89,7 +92,7 @@ export default {
     },
     async fetchMenu() {
       try {
-        const response = await axios.get('/api/v1/settings', {
+        const response = await axios.get(`${API_BASE_URL}/api/v1/settings`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         this.dynamicMenu = response.data.menu || [];
@@ -104,7 +107,7 @@ export default {
     }
   },
   async created() {
-    if (!this.menu) await this.fetchMenu();
+    await this.fetchMenu();
     window.addEventListener('storage', this.updateAuth);
   },
   beforeUnmount() {

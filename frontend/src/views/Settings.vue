@@ -34,8 +34,7 @@
     <div class="menu-editor-section card shadow-sm p-4 bg-white rounded">
       <h3 class="mb-4">Menu Editor</h3>
       <DynamicMenuEditor
-        v-if="settings.languages"
-        v-model:menu="settings.menu"
+        :menu="settings.menu"
         :languages="settings.languages"
         @update="onMenuUpdate"
       />
@@ -45,6 +44,7 @@
 
 <script>
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import DynamicMenuEditor from '../components/DynamicMenuEditor.vue';
 export default {
   name: 'Settings',
@@ -67,7 +67,7 @@ export default {
   methods: {
     async fetchSettings() {
       try {
-        const response = await axios.get('/api/v1/settings', {
+        const response = await axios.get(`${API_BASE_URL}/api/v1/settings`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         this.settings = response.data;
@@ -82,12 +82,16 @@ export default {
     },
     async saveSettings() {
       try {
-        await axios.put('/api/v1/settings', this.settings, {
+        const payload = {
+          ...this.settings,
+          menu: JSON.parse(JSON.stringify(this.settings.menu))
+        };
+        console.log('Saving settings payload:', payload); // Debug log
+        await axios.put(`${API_BASE_URL}/api/v1/settings`, payload, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         this.message = 'Settings saved!';
         this.messageType = 'success';
-        // Instead of reload, emit event to update app languages
         this.$emit('settings-updated', { ...this.settings });
       } catch (error) {
         this.message = 'Error saving settings';
@@ -95,7 +99,10 @@ export default {
       }
     },
     onMenuUpdate(newMenu) {
-      this.settings.menu = newMenu;
+      // Only update if changed to avoid infinite loop
+      if (JSON.stringify(this.settings.menu) !== JSON.stringify(newMenu)) {
+        this.settings.menu = newMenu;
+      }
     },
   },
 };

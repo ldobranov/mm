@@ -50,7 +50,7 @@
             <button type="button" class="btn-close" @click="closeModal"></button>
           </div>
           <div class="modal-body">
-            <form @submit.prevent="showAdd ? addWidget() : saveEdit()">
+            <form @submit.prevent="showAdd ? addWidget() : saveEdit()" :style="{ background: '#f8f9fa', borderRadius: '8px', padding: '16px' }">
               <div class="mb-3">
                 <label class="form-label">Type</label>
                 <select v-model="form.type" class="form-select" :disabled="showEdit">
@@ -58,6 +58,13 @@
                   <option value="date">Date</option>
                   <option value="temp">Temp</option>
                   <option value="hive">HiveOS Rig</option>
+                </select>
+              </div>
+              <div class="mb-3" v-if="form.type === 'hive'">
+                <label class="form-label">Mode</label>
+                <select v-model="form.config.mode" class="form-select">
+                  <option value="rig">Single Rig</option>
+                  <option value="farm">Whole Farm</option>
                 </select>
               </div>
               <div class="mb-3">
@@ -80,8 +87,8 @@
                 <input v-model="form.config.token" class="form-control" placeholder="HiveOS API Token" />
                 <label class="form-label mt-2">Farm ID</label>
                 <input v-model="form.config.farmId" class="form-control" placeholder="Farm ID" />
-                <label class="form-label mt-2">Worker ID</label>
-                <input v-model="form.config.workerId" class="form-control" placeholder="Worker ID" />
+                <label v-if="form.config.mode !== 'farm'" class="form-label mt-2">Worker ID</label>
+                <input v-if="form.config.mode !== 'farm'" v-model="form.config.workerId" class="form-control" placeholder="Worker ID" />
               </div>
               <!-- Temp has no config for now -->
               <button type="submit" class="btn btn-success">Save</button>
@@ -95,9 +102,20 @@
 
 <script>
 import axios from 'axios'
+import { API_BASE_URL } from '../config'
+import ClockWidget from '../widgets/ClockWidget.vue'
+import DateWidget from '../widgets/DateWidget.vue'
+import TempWidget from '../widgets/TempWidget.vue'
+import HiveWidget from '../widgets/HiveWidget.vue'
 
 export default {
   name: 'Widget',
+  components: {
+    ClockWidget,
+    DateWidget,
+    TempWidget,
+    HiveWidget
+  },
   data() {
     return {
       widgets: [],
@@ -117,7 +135,7 @@ export default {
   methods: {
     async fetchWidgets() {
       try {
-        const res = await axios.get('/api/v1/widgets/')
+        const res = await axios.get(`${API_BASE_URL}/api/v1/widgets/`)
         this.widgets = res.data
       } catch (e) {
         alert('Failed to fetch widgets: ' + (e?.message || e))
@@ -133,13 +151,14 @@ export default {
         payload.config = {
           token: payload.config.token || '',
           farmId: payload.config.farmId || '',
-          workerId: payload.config.workerId || ''
+          workerId: payload.config.workerId || '',
+          mode: payload.config.mode || 'rig' // ensure mode is included
         }
       } else {
         payload.config = {}
       }
       try {
-        await axios.post('/api/v1/widgets/', payload)
+        await axios.post(`${API_BASE_URL}/api/v1/widgets/`, payload)
       } catch (e) {
         alert('Failed to add widget: ' + (e?.message || e))
       }
@@ -161,13 +180,14 @@ export default {
         payload.config = {
           token: payload.config.token || '',
           farmId: payload.config.farmId || '',
-          workerId: payload.config.workerId || ''
+          workerId: payload.config.workerId || '',
+          mode: payload.config.mode || 'rig' // ensure mode is included
         }
       } else {
         payload.config = {}
       }
       try {
-        await axios.put(`/api/v1/widgets/${this.editId}`, payload)
+        await axios.put(`${API_BASE_URL}/api/v1/widgets/${this.editId}`, payload)
       } catch (e) {
         alert('Failed to update widget: ' + (e?.message || e))
       }
@@ -178,7 +198,7 @@ export default {
       // Only update enabled/config
       const payload = { ...widget }
       try {
-        await axios.put(`/api/v1/widgets/${widget.id}`, payload)
+        await axios.put(`${API_BASE_URL}/api/v1/widgets/${widget.id}`, payload)
       } catch (e) {
         alert('Failed to update widget: ' + (e?.message || e))
       }
@@ -187,7 +207,7 @@ export default {
     async deleteWidget(id) {
       if (!confirm('Delete this widget?')) return
       try {
-        await axios.delete(`/api/v1/widgets/${id}`)
+        await axios.delete(`${API_BASE_URL}/api/v1/widgets/${id}`)
       } catch (e) {
         alert('Failed to delete widget: ' + (e?.message || e))
       }
@@ -198,6 +218,15 @@ export default {
       this.showEdit = false
       this.editId = null
       this.form = { type: 'clock', enabled: true, config: {} }
+    },
+    getWidgetComponent(widget) {
+      if (widget.type === 'clock') return 'ClockWidget'
+      if (widget.type === 'date') return 'DateWidget'
+      if (widget.type === 'temp') return 'TempWidget'
+      if (widget.type === 'hive') return 'HiveWidget'
+      return {
+        template: '<div>Unknown widget</div>'
+      }
     },
   },
 }
@@ -217,3 +246,10 @@ export default {
   min-width: 350px;
 }
 </style>
+
+<!-- In the template where you render the widget component: -->
+<component
+  :is="getWidgetComponent(widget)"
+  :widget="widget"
+  v-bind="widget.type === 'hive' ? { mode: widget.config?.mode || 'rig' } : {}"
+/>

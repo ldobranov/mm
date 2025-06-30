@@ -46,6 +46,7 @@
 
 <script>
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import draggable from 'vuedraggable';
 
 const CategoryTree = {
@@ -313,7 +314,7 @@ export default {
     },
     async fetchCategories() {
       try {
-        const response = await axios.get('/api/v1/categories/');
+        const response = await axios.get(`${API_BASE_URL}/api/v1/categories/`);
         this.categories = response.data;
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -321,7 +322,7 @@ export default {
     },
     async createCategory() {
       try {
-        const response = await axios.post('/api/v1/categories/', {
+        const response = await axios.post(`${API_BASE_URL}/api/v1/categories/`, {
           name: this.newCategoryName,
           parent_id: this.newCategoryParentId,
           selectable: this.newCategorySelectable
@@ -349,7 +350,7 @@ export default {
       const { id, name, parent_id, selectable } = payload;
       const cat = this.categories.find(c => c.id === id);
       if (!cat) return;
-      axios.put(`/api/v1/categories/${id}`, {
+      axios.put(`${API_BASE_URL}/api/v1/categories/${id}`, {
         name,
         parent_id: parent_id === undefined ? null : parent_id,
         selectable
@@ -378,7 +379,7 @@ export default {
     },
     async deleteCategory(category) {
       try {
-        await axios.delete(`/api/v1/categories/${category.id}`, {
+        await axios.delete(`${API_BASE_URL}/api/v1/categories/${category.id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         this.categories = this.categories.filter(c => c.id !== category.id);
@@ -421,7 +422,7 @@ export default {
     },
     async updateCategoryOrder(flat) {
       try {
-        await axios.post('/api/v1/categories/reorder', flat, {
+        await axios.post(`${API_BASE_URL}/api/v1/categories/reorder`, flat, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         this.showMessage(this.$t('categories.reordered'), 'success');

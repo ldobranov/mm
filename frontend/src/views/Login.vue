@@ -21,6 +21,7 @@
 
 <script>
 import axios from 'axios'
+import { API_BASE_URL } from '../config'
 
 export default {
   data() {
@@ -33,13 +34,13 @@ export default {
   methods: {
     async login() {
       try {
-        const res = await axios.post('http://192.168.1.77:8000/api/v1/users/login', {
+        const res = await axios.post(`${API_BASE_URL}/api/v1/users/login`, {
           username: this.username,
           password: this.password
         })
         localStorage.setItem('token', res.data.access_token)
         this.$emit('loggedIn');
-        this.$router.push('/profile') // or wherever you want to redirect
+        this.$router.push('/profile')
       } catch (err) {
         this.error = 'Invalid credentials'
       }

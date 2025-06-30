@@ -32,6 +32,7 @@
 
 <script>
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 export default {
   name: 'Users',
@@ -48,7 +49,7 @@ export default {
   methods: {
     async fetchUsers() {
       try {
-        const response = await axios.get('/api/v1/users/', {
+        const response = await axios.get(`${API_BASE_URL}/api/v1/users/`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         this.users = response.data;
@@ -66,7 +67,7 @@ export default {
     },
     async updateUserRole(user) {
       try {
-        await axios.put(`/api/v1/users/${user.id}`, { role: this.editUser.role }, {
+        await axios.put(`${API_BASE_URL}/api/v1/users/${user.id}`, { role: this.editUser.role }, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         this.cancelEdit();
@@ -77,7 +78,7 @@ export default {
     },
     async deleteUser(user) {
       try {
-        await axios.delete(`/api/v1/users/${user.id}/`, {
+        await axios.delete(`${API_BASE_URL}/api/v1/users/${user.id}/`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         this.users = this.users.filter(u => u.id !== user.id);
