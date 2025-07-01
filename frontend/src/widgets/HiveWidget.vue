@@ -49,7 +49,7 @@
             <div class="mt-3 d-flex flex-wrap gap-2 justify-content-center">
               <button class="btn btn-sm btn-success" @click="rigAction('miners/start')">Start Miner</button>
               <button class="btn btn-sm btn-warning" @click="rigAction('miners/stop')">Stop Miner</button>
-              <button class="btn btn-sm btn-info" @click="rigAction('restart')">Restart Miner</button>
+              <button class="btn btn-sm btn-info" @click="rigAction('reboot')">Reboot Miner</button>
               <button class="btn btn-sm btn-danger" @click="rigAction('shutdown')">Shutdown</button>
               <button class="btn btn-sm btn-secondary" @click="closeRigPopup">Close</button>
             </div>
@@ -70,7 +70,7 @@
         <button class="btn btn-sm btn-secondary me-1" @click="fetchRig">Refresh</button>
         <button class="btn btn-sm btn-success me-1" @click="sendRigAction('start')">Start Miner</button>
         <button class="btn btn-sm btn-warning me-1" @click="sendRigAction('stop')">Stop Miner</button>
-        <button class="btn btn-sm btn-info me-1" @click="sendRigAction('restart')">Restart Miner</button>
+        <button class="btn btn-sm btn-info me-1" @click="sendRigAction('reboot')">Reboot Miner</button>
         <button class="btn btn-sm btn-danger" @click="sendRigAction('shutdown')">Shutdown</button>
         <div v-if="loading" class="mt-2">Loading...</div>
         <div v-if="error" class="text-danger mt-2">{{ error }}</div>
@@ -182,6 +182,10 @@ export default {
           token: this.token,
           farm_id: this.farmId,
           action: action
+        }).then(res => {
+          if (res.data && res.data.error) {
+            this.error = res.data.error;
+          }
         });
         await this.fetchFarm();
       } catch (e) {
@@ -258,7 +262,7 @@ export default {
       this.popupError = '';
       // Map UI actions to backend actions
       let apiAction = action;
-      if (action === 'restart' || action === 'miners/restart') apiAction = 'miners/restart';
+      if (action === 'reboot' || action === 'miners/reboot') apiAction = 'miners/reboot';
       if (action === 'start' || action === 'miners/start') apiAction = 'miners/start';
       if (action === 'stop' || action === 'miners/stop') apiAction = 'miners/stop';
       if (action === 'shutdown') apiAction = 'shutdown';
@@ -276,6 +280,10 @@ export default {
 
       try {
         const res = await axios.post('/api/v1/hiveos/rig/action', payload);
+        if (res.data && res.data.error) {
+          this.popupError = res.data.error;
+          return;
+        }
         // Optionally check for backend error in response body
         if (res.data && res.data.error) {
           this.popupError = res.data.error;

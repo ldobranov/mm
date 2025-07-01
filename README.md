@@ -49,33 +49,51 @@ The frontend is built using Vue.js and is structured as follows:
 To get started with the project, follow these steps:
 
 1. **Clone the repository**:
-   ```
-   git clone <repository-url>
-   cd fullstack-app
+   ```bash
+   git clone https://github.com/ldobranov/mm
+   cd mm
    ```
 
 2. **Set up the backend**:
    - Navigate to the `backend` directory.
-   - Install the required dependencies:
+   - (Recommended) Create and activate a Python virtual environment:
+     ```bash
+     python3 -m venv venv
+     source venv/bin/activate  # On Windows use: venv\Scripts\activate
      ```
+   - Install the required dependencies:
+     ```bash
      pip install -r requirements.txt
      ```
-   - Set up the environment variables in the `.env` file.
+   - Set up the environment variables in the `.env` file (if needed).
    - Run the backend server:
-     ```
-     python -m app.main
+     ```bash
+     uvicorn app.main:app --reload --host 0.0.0.0 --port 8887
      ```
 
 3. **Set up the frontend**:
    - Navigate to the `frontend` directory.
-   - Install the required dependencies:
+   - (Optional, only if you use Python tools for frontend development):
+     ```bash
+     python3 -m venv venv
+     source venv/bin/activate
+     # Install any Python tools needed for frontend (rare for Vue.js projects)
      ```
+   - Install the required dependencies:
+     ```bash
      npm install
      ```
    - Run the frontend application:
-     ```
+     ```bash
      npm run serve
+     # or
+     npm run dev
      ```
+
+## Python Virtual Environment Setup
+
+- **Backend:** Using a Python virtual environment is highly recommended to avoid dependency conflicts.
+- **Frontend:** A Python virtual environment is usually not required unless you use Python-based tools for frontend development (e.g., SASS/SCSS compilers, linters, etc.). For most Vue.js projects, Node.js and npm are sufficient.
 
 ## Contributing
 

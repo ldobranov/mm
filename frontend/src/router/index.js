@@ -10,6 +10,7 @@ import Settings from '../views/Settings.vue'
 import Display from '../views/Display.vue'
 import Widget from '../views/Widget.vue'
 import Schedules from '../views/Schedules.vue'
+import WidgetsAdmin from '../views/admin/Widgets.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -23,6 +24,7 @@ const routes = [
   { path: '/display', name: 'Display', component: Display },
   { path: '/widget', name: 'Widget', component: Widget },
   { path: '/schedules', name: 'Schedules', component: Schedules },
+  { path: '/admin/widgets', name: 'WidgetsAdmin', component: WidgetsAdmin },
   // Add more routes here as needed
 ]
 

@@ -1,6 +1,7 @@
 # Node/Vue
 node_modules/
 dist/
+venv/
 .vite/
 .DS_Store
 .env
