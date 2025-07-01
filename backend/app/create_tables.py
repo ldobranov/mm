@@ -5,7 +5,7 @@ from .db.session import SessionLocal
 from .core.security import get_password_hash
 
 def create_tables():
-    Base.metadata.create_all(bind=engine)
+    # Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     admin_user = db.query(models.User).filter(models.User.username == "admin").first()
     if admin_user:

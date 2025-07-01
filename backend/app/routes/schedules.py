@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import datetime
-import asyncio
+from sqlalchemy.orm import Session
+from app.db.session import get_db
+from app.db.models.schedule import Schedule as ScheduleModel
+from app.db.models.widget import Widget as WidgetModel
 
 router = APIRouter(prefix="/api/v1/schedules", tags=["schedules"])
 
@@ -21,51 +23,38 @@ class ScheduleUpdate(ScheduleBase):
 class Schedule(ScheduleBase):
     id: int
 
-schedules_db: List[dict] = []
-
 @router.get("/", response_model=List[Schedule])
-def list_schedules():
-    return schedules_db
+def list_schedules(db: Session = Depends(get_db)):
+    return db.query(ScheduleModel).all()
 
 @router.post("/", response_model=Schedule)
-def create_schedule(schedule: ScheduleCreate):
-    new_id = max([s["id"] for s in schedules_db], default=0) + 1
-    sched = schedule.dict()
-    sched["id"] = new_id
-    schedules_db.append(sched)
+def create_schedule(schedule: ScheduleCreate, db: Session = Depends(get_db)):
+    # Validate widget exists
+    widget = db.query(WidgetModel).filter(WidgetModel.id == schedule.widget_id).first()
+    if not widget:
+        raise HTTPException(status_code=400, detail="Widget not found")
+    sched = ScheduleModel(**schedule.dict())
+    db.add(sched)
+    db.commit()
+    db.refresh(sched)
     return sched
 
 @router.put("/{schedule_id}", response_model=Schedule)
-def update_schedule(schedule_id: int, schedule: ScheduleUpdate):
-    for i, s in enumerate(schedules_db):
-        if s["id"] == schedule_id:
-            schedules_db[i].update(schedule.dict())
-            return schedules_db[i]
-    raise HTTPException(status_code=404, detail="Schedule not found")
+def update_schedule(schedule_id: int, schedule: ScheduleUpdate, db: Session = Depends(get_db)):
+    sched = db.query(ScheduleModel).filter(ScheduleModel.id == schedule_id).first()
+    if not sched:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    for key, value in schedule.dict(exclude_unset=True).items():
+        setattr(sched, key, value)
+    db.commit()
+    db.refresh(sched)
+    return sched
 
 @router.delete("/{schedule_id}")
-def delete_schedule(schedule_id: int):
-    for i, s in enumerate(schedules_db):
-        if s["id"] == schedule_id:
-            schedules_db.pop(i)
-            return {"ok": True}
-    raise HTTPException(status_code=404, detail="Schedule not found")
-
-# Background task to check and trigger schedules
-async def schedule_worker():
-    while True:
-        now = datetime.now().isoformat(timespec='seconds')
-        for sched in schedules_db:
-            # Only trigger if time matches now (to the minute)
-            if sched["time"][:16] == now[:16]:
-                # Here you would trigger the widget action (call the widget API)
-                # For now, just print
-                print(f"Triggering action {sched['action']} for widget {sched['widget_id']} at {now}")
-                # TODO: Call the widget action API here
-        await asyncio.sleep(30)
-
-# To start the worker, add this to your FastAPI startup event:
-# import asyncio
-# @app.on_event("startup")
-# async def start_schedule_worker():
-#     asyncio.create_task(schedule_worker())
+def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
+    sched = db.query(ScheduleModel).filter(ScheduleModel.id == schedule_id).first()
+    if not sched:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    db.delete(sched)
+    db.commit()
+    return {"ok": True}

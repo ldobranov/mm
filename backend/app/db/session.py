@@ -14,3 +14,6 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# For Alembic compatibility, expose the database URL as a variable
+DB_URL = SQLALCHEMY_DATABASE_URL
