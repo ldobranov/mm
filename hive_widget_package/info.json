@@ -1,0 +1,14 @@
+{
+  "type": "widget",
+  "name": "hive",
+  "frontend_entry": "frontend/HiveWidget.vue",
+  "backend_entry": "backend/routes.py",
+  "description": "HiveOS Widget for farm and rig management.",
+  "version": "1.0.0",
+  "author": "MM App Team",
+  "meta": {
+    "display_name": "HiveOS Widget",
+    "category": "monitoring",
+    "tags": ["hiveos", "mining", "farm", "rig"]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "HiveOS Widget",
+  "type": "hive",
+  "description": "Manage and monitor your HiveOS farm and rigs.",
+  "version": "1.0.0",
+  "author": "MM App Team",
+  "entry": "HiveWidget.vue"
+}
