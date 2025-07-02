@@ -177,18 +177,48 @@ export default {
     async sendFarmAction(action) {
       this.loading = true;
       this.error = '';
+      // Only allow valid actions for farm
+      let apiAction = null;
+      if (action === 'start' || action === 'miners/start') apiAction = 'miners/start';
+      else if (action === 'stop' || action === 'miners/stop') apiAction = 'miners/stop';
+      else if (action === 'reboot') apiAction = 'reboot';
+      else if (action === 'shutdown') apiAction = 'shutdown';
+      else {
+        this.error = `Unsupported farm action: ${action}`;
+        this.loading = false;
+        return;
+      }
+      const payload = {
+        token: this.token,
+        farm_id: this.farmId,
+        action: apiAction
+      };
+      console.log('[HiveWidget] Sending farm action:', apiAction, 'Payload:', payload);
       try {
-        await axios.post('/api/v1/hiveos/farm/action', {
-          token: this.token,
-          farm_id: this.farmId,
-          action: action
-        }).then(res => {
-          if (res.data && res.data.error) {
-            this.error = res.data.error;
-          }
-        });
+        await axios.post('/api/v1/hiveos/farm/action', payload)
+          .then(res => {
+            console.log('[HiveWidget] Farm action response:', res);
+            if (res.data && res.data.results) {
+              // Log all results
+              res.data.results.forEach(r => {
+                if (r.status === 'ok') {
+                  console.log(`[HiveWidget] Farm action success for worker ${r.worker_id}`);
+                } else {
+                  console.error(`[HiveWidget] Farm action failed for worker ${r.worker_id}: ${r.error}`);
+                }
+              });
+              // Show summary error if any failures
+              const failed = res.data.results.filter(r => r.status !== 'ok');
+              if (failed.length > 0) {
+                this.error = `Failed for ${failed.length} rig(s): ` + failed.map(f => `${f.worker_id || '?'} (${f.error})`).join(', ');
+              }
+            } else if (res.data && res.data.error) {
+              this.error = res.data.error;
+            }
+          });
         await this.fetchFarm();
       } catch (e) {
+        console.error('[HiveWidget] Farm action error:', e);
         this.error = e.response?.data?.detail || e.message || 'Error sending farm action';
       } finally {
         this.loading = false;
@@ -197,15 +227,19 @@ export default {
     async sendRigAction(action) {
       this.loading = true;
       this.error = '';
+      const payload = {
+        token: this.token,
+        farm_id: this.farmId,
+        worker_id: this.workerId,
+        action: action
+      };
+      console.log('[HiveWidget] Sending rig action:', action, 'Payload:', payload);
       try {
-        await axios.post('/api/v1/hiveos/rig/action', {
-          token: this.token,
-          farm_id: this.farmId,
-          worker_id: this.workerId,
-          action: action
-        });
+        const res = await axios.post('/api/v1/hiveos/rig/action', payload);
+        console.log('[HiveWidget] Rig action response:', res);
         await this.fetchRig();
       } catch (e) {
+        console.error('[HiveWidget] Rig action error:', e);
         this.error = e.response?.data?.detail || e.message || 'Error sending rig action';
       } finally {
         this.loading = false;
@@ -260,13 +294,17 @@ export default {
       }
       this.popupLoading = true;
       this.popupError = '';
-      // Map UI actions to backend actions
-      let apiAction = action;
-      if (action === 'reboot' || action === 'miners/reboot') apiAction = 'miners/reboot';
+      // Only allow valid actions for rig
+      let apiAction = null;
       if (action === 'start' || action === 'miners/start') apiAction = 'miners/start';
-      if (action === 'stop' || action === 'miners/stop') apiAction = 'miners/stop';
-      if (action === 'shutdown') apiAction = 'shutdown';
-
+      else if (action === 'stop' || action === 'miners/stop') apiAction = 'miners/stop';
+      else if (action === 'reboot') apiAction = 'reboot';
+      else if (action === 'shutdown') apiAction = 'shutdown';
+      else {
+        this.popupError = `Unsupported rig action: ${action}`;
+        this.popupLoading = false;
+        return;
+      }
       // Compose payload and remove undefined/null fields
       const payload = {
         token: this.token,
@@ -277,9 +315,10 @@ export default {
       Object.keys(payload).forEach(
         k => (payload[k] === undefined || payload[k] === null) && delete payload[k]
       );
-
+      console.log('[HiveWidget] Sending rig popup action:', apiAction, 'Payload:', payload);
       try {
         const res = await axios.post('/api/v1/hiveos/rig/action', payload);
+        console.log('[HiveWidget] Rig popup action response:', res);
         if (res.data && res.data.error) {
           this.popupError = res.data.error;
           return;
@@ -292,6 +331,7 @@ export default {
           this.closeRigPopup();
         }
       } catch (e) {
+        console.error('[HiveWidget] Rig popup action error:', e);
         // Show backend error message if available
         if (e.response?.data?.detail) {
           this.popupError = e.response.data.detail;

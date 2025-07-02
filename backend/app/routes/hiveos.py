@@ -64,63 +64,80 @@ async def farm_action(data: HiveOSActionRequest):
         raise HTTPException(status_code=400, detail=f"Invalid action: {data.action}")
     headers = {"Authorization": f"Bearer {data.token or get_config('HIVE_TOKEN')}", "Content-Type": "application/json"}
     farm_id = data.farm_id or get_config('HIVE_FARM_ID')
-    # Farm-wide miner start/stop
-    if data.action in ("miners/start", "miners/stop"):
-        url = f"{HIVEOS_API_BASE}/farms/{farm_id}/workers/command"
-        miner_action = "start" if data.action == "miners/start" else "stop"
-        payload = {"command": "miner", "data": {"action": miner_action}}
-        result = await safe_post(url, headers=headers, json=payload)
-        if not result:
-            logger.warning(f"HiveOS farm miner action failed: {data.action}")
-            raise HTTPException(status_code=502, detail="HiveOS farm miner action failed")
-        return {"status": "ok"}
-    elif data.action == "shutdown":
-        url = f"{HIVEOS_API_BASE}/farms/{farm_id}/shutdown"
-        result = await safe_post(url, headers=headers)
-        if not result:
-            logger.warning(f"HiveOS farm shutdown failed for farm {farm_id}")
-            raise HTTPException(status_code=502, detail="HiveOS farm shutdown failed")
-        return {"status": "ok"}
-    elif data.action == "reboot":
-        url = f"{HIVEOS_API_BASE}/farms/{farm_id}/reboot"
-        result = await safe_post(url, headers=headers)
-        if not result:
-            logger.warning(f"HiveOS farm reboot failed for farm {farm_id}")
-            raise HTTPException(status_code=502, detail="HiveOS farm reboot failed")
-        return {"status": "ok"}
-    else:
-        raise HTTPException(status_code=400, detail="Unsupported farm action")
+    # Get all workers in the farm
+    workers_url = f"{HIVEOS_API_BASE}/farms/{farm_id}/workers"
+    workers_result = await safe_get(workers_url, headers=headers)
+    if not workers_result or "data" not in workers_result:
+        logger.warning(f"HiveOS API error: {workers_result}")
+        raise HTTPException(status_code=502, detail="HiveOS API error (fetching workers)")
+    results = []
+    for worker in workers_result["data"]:
+        worker_id = worker.get("id") or worker.get("worker_id")
+        if not worker_id:
+            logger.warning(f"Worker missing id: {worker}")
+            results.append({"worker_id": None, "status": "error", "error": "missing_id"})
+            continue
+        url = f"{HIVEOS_API_BASE}/farms/{farm_id}/workers/{worker_id}/command"
+        if data.action in ["miners/start", "miners/stop"]:
+            miner_action = "start" if data.action == "miners/start" else "stop"
+            payload = {"command": "miner", "data": {"action": miner_action}}
+        elif data.action in ["reboot", "shutdown"]:
+            payload = {"command": data.action}
+        else:
+            logger.warning(f"Unsupported action: {data.action}")
+            results.append({"worker_id": worker_id, "status": "error", "error": "unsupported_action"})
+            continue
+        try:
+            result = await safe_post(url, headers=headers, json=payload)
+            if result:
+                results.append({"worker_id": worker_id, "status": "ok"})
+            else:
+                logger.warning(f"HiveOS {data.action} failed for worker {worker_id}")
+                results.append({"worker_id": worker_id, "status": "error", "error": "no_result"})
+        except Exception as e:
+            logger.warning(f"HiveOS {data.action} failed for worker {worker_id}: {e}")
+            results.append({"worker_id": worker_id, "status": "error", "error": str(e)})
+    return {"results": results}
 
 @router.post("/rig/action")
 @retry(times=2)
 async def rig_action(data: HiveOSActionRequest):
     if data.action not in ALLOWED_ACTIONS:
         raise HTTPException(status_code=400, detail=f"Invalid action: {data.action}")
+    if not data.worker_id:
+        logger.warning(f"Missing worker_id in rig_action: {data}")
+        raise HTTPException(status_code=422, detail="worker_id is required for rig actions")
     headers = {"Authorization": f"Bearer {data.token or get_config('HIVE_TOKEN')}", "Content-Type": "application/json"}
     farm_id = data.farm_id or get_config('HIVE_FARM_ID')
     worker_id = data.worker_id
-    if data.action in ("miners/start", "miners/stop"):
+    if data.action in ["miners/start", "miners/stop"]:
         url = f"{HIVEOS_API_BASE}/farms/{farm_id}/workers/{worker_id}/command"
         miner_action = "start" if data.action == "miners/start" else "stop"
         payload = {"command": "miner", "data": {"action": miner_action}}
-        result = await safe_post(url, headers=headers, json=payload)
+        try:
+            result = await safe_post(url, headers=headers, json=payload)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                logger.warning(f"HiveOS {data.action} not supported for worker {worker_id}")
+                raise HTTPException(status_code=404, detail=f"{data.action.capitalize()} not supported for this rig (worker_id={worker_id})")
+            raise
         if not result:
-            logger.warning(f"HiveOS miner action failed: {data.action}")
-            raise HTTPException(status_code=502, detail="HiveOS miner action failed")
+            logger.warning(f"HiveOS {data.action} failed for worker {worker_id}")
+            raise HTTPException(status_code=502, detail=f"HiveOS {data.action} failed for worker {worker_id}")
         return {"status": "ok"}
-    elif data.action == "shutdown":
-        url = f"{HIVEOS_API_BASE}/farms/{farm_id}/workers/{worker_id}/shutdown"
-        result = await safe_post(url, headers=headers)
+    elif data.action in ["reboot", "shutdown"]:
+        url = f"{HIVEOS_API_BASE}/farms/{farm_id}/workers/{worker_id}/command"
+        payload = {"command": data.action}
+        try:
+            result = await safe_post(url, headers=headers, json=payload)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                logger.warning(f"HiveOS {data.action} not supported for worker {worker_id}")
+                raise HTTPException(status_code=404, detail=f"{data.action.capitalize()} not supported for this rig (worker_id={worker_id})")
+            raise
         if not result:
-            logger.warning(f"HiveOS shutdown failed for worker {worker_id}")
-            raise HTTPException(status_code=502, detail="HiveOS shutdown failed")
-        return {"status": "ok"}
-    elif data.action == "reboot":
-        url = f"{HIVEOS_API_BASE}/farms/{farm_id}/workers/{worker_id}/reboot"
-        result = await safe_post(url, headers=headers)
-        if not result:
-            logger.warning(f"HiveOS reboot failed for worker {worker_id}")
-            raise HTTPException(status_code=502, detail="HiveOS reboot failed")
+            logger.warning(f"HiveOS {data.action} failed for worker {worker_id}")
+            raise HTTPException(status_code=502, detail=f"HiveOS {data.action} failed for worker {worker_id}")
         return {"status": "ok"}
     else:
         raise HTTPException(status_code=400, detail="Unsupported rig action")
