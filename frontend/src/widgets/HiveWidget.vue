@@ -13,18 +13,8 @@
         <button class="btn btn-sm btn-danger me-1" @click="sendFarmAction('stop')">Stop All</button>
         <div v-if="loading" class="mt-2">Loading...</div>
         <div v-if="error" class="text-danger mt-2">{{ error }}</div>
-        <div
-          v-if="farm && farm.rigs && farm.rigs.length"
-          class="rigs-grid"
-        >
-          <div
-            v-for="rig in farm.rigs"
-            :key="rig.worker_id"
-            class="rig-box"
-            :style="{ background: rigStatusColor(rig), color: '#222', border: '1px solid #bbb' }"
-            @click="openRigPopup(rig)"
-            style="cursor:pointer;"
-          >
+        <div v-if="farm && farm.rigs && farm.rigs.length" class="rigs-grid">
+          <div v-for="rig in farm.rigs" :key="rig.worker_id" class="rig-box" :style="{ background: rigStatusColor(rig), color: '#222', border: '1px solid #bbb' }" @click="openRigPopup(rig)" style="cursor:pointer;">
             <b>{{ rig.name }}</b>
             <div style="font-size:0.8em;">
               <div>Uptime: {{ rig.stats && rig.stats.boot_time ? formatUptime(rig.stats.boot_time) : '-' }}</div>
@@ -85,7 +75,6 @@
     </div>
   </div>
 </template>
-
 <script>
 import axios from 'axios'
 export default {

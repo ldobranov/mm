@@ -166,11 +166,17 @@ const TempWidget = {
   props: ['widget'],
   template: `<div><b>Temp</b></div>`
 }
-const HiveWidget = defineAsyncComponent(() => import('../widgets/HiveWidget.vue'))
+
+const widgetComponentMap = {
+  clock: ClockWidget,
+  date: DateWidget,
+  temp: TempWidget,
+  // No static mapping for hive/hive1 or any dynamic widgets
+};
 
 export default {
   name: 'Display',
-  components: { draggable, HiveWidget },
+  components: { draggable }, // Remove HiveWidget from here
   data() {
     return {
       widgets: [],
@@ -215,13 +221,19 @@ export default {
       }
     },
     getWidgetComponent(widget) {
-      if (widget.type === 'clock') return ClockWidget
-      if (widget.type === 'date') return DateWidget
-      if (widget.type === 'temp') return TempWidget
-      if (widget.type === 'hive') return HiveWidget // <-- ensure this is the imported HiveWidget
-      return {
-        template: '<div>Unknown widget</div>'
-      }
+      if (widgetComponentMap[widget.type]) return widgetComponentMap[widget.type];
+      const fileName = widget.type.charAt(0).toUpperCase() + widget.type.slice(1) + 'Widget.vue';
+      return defineAsyncComponent({
+        loader: () => import(`../widgets/${fileName}`),
+        errorComponent: {
+          template: `<div style='color:red;'>Widget not found: ${fileName}</div>`
+        },
+        loadingComponent: {
+          template: '<div>Loading widget...</div>'
+        },
+        delay: 200,
+        timeout: 3000
+      });
     },
     widgetStyle(widget) {
       return {

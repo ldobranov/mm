@@ -1,6 +1,0 @@
-{
-  "name": "HiveOS Monitor",
-  "description": "Shows current status of HiveOS rigs",
-  "enabled": true,
-  "route": "/widgets/hive"
-}

@@ -4,5 +4,14 @@
   "description": "Manage and monitor your HiveOS farm and rigs.",
   "version": "1.0.0",
   "author": "MM App Team",
-  "entry": "HiveWidget.vue"
+  "entry": "HiveWidget.vue",
+  "fields": [
+    { "name": "mode", "label": "Mode", "type": "select", "options": [
+      {"label": "Single Rig", "value": "rig"},
+      {"label": "Whole Farm", "value": "farm"}
+    ], "default": "rig" },
+    { "name": "token", "label": "API Token", "type": "text", "placeholder": "HiveOS API Token" },
+    { "name": "farmId", "label": "Farm ID", "type": "text", "placeholder": "Farm ID" },
+    { "name": "workerId", "label": "Worker ID", "type": "text", "placeholder": "Worker ID", "showIf": { "mode": "rig" } }
+  ]
 }

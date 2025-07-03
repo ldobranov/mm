@@ -141,7 +141,7 @@ export default {
     },
   },
   async mounted() {
-    await this.fetchWidgets();
+    await this.fetchAvailableWidgets();
     await this.fetchAvailableTypes();
   },
 };
